@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-research"
+version = "0.1.0"
+description = "A股高频数据基础设施与 L3 订单流因子研究"
+# 3.11 起标准库自带 tomllib, qr/paths.py 用它读 qr.toml
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyarrow",     # panel / tick 的 parquet 读写
+    "scipy",       # 统计检验与 Hawkes 拟合
+    "matplotlib",  # 评估与回测出图
+    "h5py",        # 读 LOB 重建产出的 H5
+]
+
+[project.optional-dependencies]
+# 机器学习组合器(l3_factor/ml/, l3_factor/explore/market_hr.py)
+ml = ["scikit-learn", "lightgbm"]
+# 跨学科探索(l3_factor/explore/), 天文安慰剂实验专用
+explore = ["astropy", "lightkurve"]
+# 海外数据拉取(massive_down/)
+massive = ["boto3>=1.34", "botocore>=1.34"]
+# 一次装齐
+all = ["quant-research[ml,explore,massive]"]
+
+[tool.setuptools]
+# 只安装共享包 qr。研究脚本仍按原样直接调用,
+# 装上 qr 之后它们在任何工作目录、任何操作系统下都能找到彼此和数据。
+packages = ["qr"]

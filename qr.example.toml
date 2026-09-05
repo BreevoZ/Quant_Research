@@ -1,0 +1,32 @@
+# 复制成仓库根的 qr.toml 后按你本机的实际情况改。qr.toml 不进版本控制。
+#
+# 相对路径锚定仓库根,绝对路径原样使用。
+# WSL 里访问 Windows 盘用 /mnt/ 前缀,例如 data = "/mnt/d/quant/l3data"。
+#
+# 也可以完全不建这个文件,改用环境变量,键名前面加 QR_ 并大写:
+#   export QR_DATA=/Volumes/ext/l3data
+# 环境变量优先级高于本文件。
+
+[paths]
+# ── l3_factor 主线 ────────────────────────────────────────────────────────────
+data = "l3_factor/data"    # 其下有 cache/ panels/ tmp/ agn/ tess/
+bt   = "l3_factor/bt"      # 评估与回测产物, 会自动创建
+
+# ── factor(早期项目, 已被 l3_factor 取代) ────────────────────────────────────
+lob_root    = "data/Lob_new"
+feat_root   = "data/factor/features"
+res_root    = "data/factor/results"
+crypto_data = "data/massive/Crypto_MIN"
+crypto_feat = "data/factor/crypto_features"
+crypto_ic   = "data/factor/crypto_ic"
+
+# ── 原始数据 ──────────────────────────────────────────────────────────────────
+tl_zip = "TL"    # 通联逐笔 zip, 其下按日期分子目录, 如 TL/20260707/
+
+# ── build_tick3s 对比脚本 ─────────────────────────────────────────────────────
+tick3s_ref = "data/tick_3s"           # 参考 parquet
+tick3s_bin = "data/tick_3s_staging"   # .bin 分片目录
+
+# ── 可执行文件 ────────────────────────────────────────────────────────────────
+# Windows 上写不写 .exe 都行, 解析时会自动补, 也会去 build/Release/ 下找。
+vsim = "vorder_sim/build/vsim"
