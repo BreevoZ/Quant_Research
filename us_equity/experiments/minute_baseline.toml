@@ -1,0 +1,13 @@
+# Fixed universe for pipeline validation, not a point-in-time investable universe.
+# 固定股票池仅用于初始化/管道验收，不代表历史可投资股票池。
+# Paths / 路径: qr.toml us_minute / us_research, or CLI overrides / 或 CLI 覆盖。
+[experiment]
+source = "flatfiles"  # 未复权、纳秒；REST 要单独使用 rest_split_adjusted（毫秒）
+start = "2026-06-15"
+end = "2026-06-18"
+tickers = ["AAPL", "MSFT", "AMZN", "GOOGL", "META", "NVDA", "JPM", "BAC", "XOM", "CVX", "WMT", "COST"]
+lookbacks = [5, 15, 60]
+horizons = [15, 30, 60]
+skip_minutes = 1
+min_cross_section = 8
+quantiles = 3

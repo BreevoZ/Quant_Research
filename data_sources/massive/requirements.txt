@@ -1,0 +1,4 @@
+# Standalone downloader dependencies / 单独使用下载器的依赖
+# From repository root / 仓库根: python -m pip install -e ".[massive]"
+boto3>=1.34
+botocore>=1.34

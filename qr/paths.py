@@ -28,8 +28,8 @@ CONFIG_NAME = "qr.toml"
 #: 这些默认值只保证"能跑起来",真实数据放哪儿请写进 qr.toml。
 DEFAULTS: dict[str, str] = {
     # l3_factor 主线
-    "data":        "l3_factor/data",   # cache/ panels/ tmp/ agn/ tess/ 都在其下
-    "bt":          "l3_factor/bt",     # 评估与回测产物(图/csv)
+    "data":        "ashare/l3_factor/data",   # cache/ panels/ tmp/ agn/ tess/ 都在其下
+    "bt":          "ashare/l3_factor/bt",     # 评估与回测产物(图/csv)
     # factor(早期 A股)
     "lob_root":    "data/Lob_new",
     "feat_root":   "data/factor/features",
@@ -38,13 +38,23 @@ DEFAULTS: dict[str, str] = {
     "crypto_data": "data/massive/Crypto_MIN",
     "crypto_feat": "data/factor/crypto_features",
     "crypto_ic":   "data/factor/crypto_ic",
+    # US equity minute research
+    "us_minute":   "data/massive/unified/flatfiles/stocks/minute_aggs_v1",
+    "us_research": "data/us_equity",
     # build_tick3s 对比脚本
     "tick3s_ref":  "data/tick_3s",
     "tick3s_bin":  "data/tick_3s_staging",
     # 原始数据
-    "tl_zip":      "TL",               # 通联逐笔 zip, 按日期分子目录
+    "tl_zip":      "data/ashare/TL",               # 通联逐笔 zip, 按日期分子目录
+    # C++ 链路(tltoflow / auction / build_tick3s), 见 qr/qr_paths.h
+    "flow_root":      "data/Flow_TL",       # tltoflow 输出
+    "auction_mx":     "data/Level2_MX",     # auction 竞价 parquet, 其下 .auction/ 是 shard 暂存
+    "lob_h5":         "data/Lob_local",     # build_tick3s 输入: 逐笔 LOB 的 H5
+    "lob_level2":     "data/Level2",        # build_tick3s 输入: Level2 快照
+    "lob_3s":         "data/Lob_new_3s",    # build_tick3s 输出: 3 秒切片 csv
+    "tick3s_parquet": "data/Lob_new_3s_MX", # build_tick3s 输出: parquet shard, 其下 .staging/
     # 可执行文件
-    "vsim":        "vorder_sim/build/vsim",
+    "vsim":        "ashare/vorder_sim/build/vsim",
 }
 
 
@@ -122,8 +132,8 @@ def vsim() -> Path:
     raise FileNotFoundError(
         f"找不到 vsim 可执行文件,已尝试:\n  "
         + "\n  ".join(str(c) for c in candidates)
-        + "\n先构建:cmake -S vorder_sim -B vorder_sim/build && "
-          "cmake --build vorder_sim/build -j\n"
+        + "\n先构建:cmake -S ashare/vorder_sim -B ashare/vorder_sim/build && "
+          "cmake --build ashare/vorder_sim/build -j\n"
           "或用 QR_VSIM 指向已有的二进制。"
     )
 

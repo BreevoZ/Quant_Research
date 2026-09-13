@@ -1,0 +1,17 @@
+# Existing users / 已有环境: conda activate mx; python -m pip install -e ".[us,massive]"
+name: mx
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - setuptools>=64
+  - numpy
+  - pandas>=2.2
+  - pyarrow
+  - scipy
+  - matplotlib
+  - h5py
+  - boto3
+  - pip:
+      - -e .[us,massive]

@@ -1,3 +1,22 @@
+# third_party · Shared build dependencies / 共享构建依赖
+
+[Repository / 全仓](../README.md) · [A-shares / A 股](../ashare/README.md) · [Setup / 环境](../docs/SETUP.md)
+
+## English
+
+System HDF5 is preferred by the A-share CMake projects. The bundled HDF5 headers and Linux library
+links are a historical fallback; some link targets are absent and the binaries are not portable to
+macOS. Install system HDF5 with `brew install hdf5` or `sudo apt install libhdf5-dev`.
+
+`clickhouse/` contains no-op client stubs for local compilation. They do not write to a database.
+`ashare/build_tick3s/Makefile` retains its older Linux `/tmp/hdf5_extracted/usr` convention;
+use the documented CMake path for portable builds.
+
+Regular A-share components reach the repository root through `../..`; `ashare/auction/cpp` uses
+`../../..`. All builds must be checked after shared dependency changes.
+
+## 中文
+
 # third_party — 本地化的第三方依赖
 
 这里放**不是本仓库写的、但构建时需要的**头文件与库。整合前每个 C++ 项目各存一份，
@@ -30,7 +49,7 @@ sudo apt install libhdf5-dev   # WSL / Linux
 各项目的 CMakeLists 用 `CMAKE_CURRENT_LIST_DIR` 往上找仓库根，不依赖调用时的工作目录：
 
 ```cmake
-get_filename_component(REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)   # auction/cpp 用 ../..
+get_filename_component(REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)   # ashare/auction/cpp 用 ../../..
 find_package(HDF5 QUIET COMPONENTS C CXX)
 if(NOT HDF5_FOUND)
   set(HDF5_DEPS ${REPO_ROOT}/third_party/hdf5)

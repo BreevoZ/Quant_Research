@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-读 vsim 的 CachedRec 二进制缓存(vorder_sim/rec_cache.h 落盘的解析结果)。
+读 vsim 的 CachedRec 二进制缓存(ashare/vorder_sim/rec_cache.h 落盘的解析结果)。
 
 【为什么单独一层】: 因子层只该依赖一个"稳定契约", 不该硬扛 UnifiedRecord 的内部布局。
 这里把布局 + 版本校验集中在一处; 缓存格式一变, 这里报错(而不是让上层静默读到错位垃圾)。

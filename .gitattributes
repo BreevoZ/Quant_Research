@@ -1,0 +1,3 @@
+# The drift baseline stores a literal unified diff, including blank context lines.
+# 漂移基线保留 diff 的原始上下文空格，不对快照应用代码空白检查。
+ashare/datacheck/scripts/lob_builder_drift.baseline -whitespace

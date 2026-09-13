@@ -1,4 +1,0 @@
-# 单独用本目录的下载器时装这两个即可。
-# 也可以在仓库根一次装齐:pip install -e ".[massive]"
-boto3>=1.34
-botocore>=1.34

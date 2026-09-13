@@ -2,11 +2,19 @@
 # 密钥 —— 绝对不能进版本历史
 # ─────────────────────────────────────────────────────────────
 massive_down/KEYS.txt
+data_sources/massive/KEYS.txt
+# The downloader also accepts KEYS.txt in the current directory.
+# 下载器默认从当前目录读取；同时保护密钥备份与各环境的 dotenv 文件。
+KEYS.txt
+KEYS.txt.*
 # 本机路径配置(模板 qr.example.toml 进仓库, 实例不进)
 qr.toml
 *.key
 *.pem
 .env
+.env.*
+!.env.example
+!.env.template
 
 # ─────────────────────────────────────────────────────────────
 # 大数据与归档 —— 原地保留, 只是不纳入版本控制
@@ -38,17 +46,22 @@ build/
 *.so
 *.dylib
 __pycache__/
+.venv/
+*.egg-info/
+downloads/
+dist/
 *.py[cod]
 .ipynb_checkpoints/
 
-# l3_factor 的批跑日志与终端捕获(bt/ 下的 .sh 脚本和 csv/png 结论保留)
-l3_factor/bt/*.out
-l3_factor/bt/*.err
-l3_factor/bt/*.log
+# A-share batch logs / A 股批跑日志（保留研究脚本与已有结论）
+ashare/l3_factor/bt/*.out
+ashare/l3_factor/bt/*.err
+ashare/l3_factor/bt/*.log
 
 # ─────────────────────────────────────────────────────────────
 # 历史归档 —— 旧文档与旧快照, 原地保留但不进仓库
-# 内容清单见 _archive/README.txt
+# Local binary archives now live under data/local_archives/.
+# 本地二进制归档已移到 data/local_archives/；旧路径仍忽略以保护其他机器。
 # ─────────────────────────────────────────────────────────────
 _archive/
 LOB_columns.md
@@ -64,5 +77,5 @@ PROJECTS.md
 .claude/settings.local.json
 
 # 白名单例外: 这些是测试夹具, 不是数据
-!vorder_sim/handcheck/*.csv
-!vorder_sim/orders_example.csv
+!ashare/vorder_sim/handcheck/*.csv
+!ashare/vorder_sim/orders_example.csv

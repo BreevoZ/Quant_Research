@@ -1,32 +1,36 @@
-# 复制成仓库根的 qr.toml 后按你本机的实际情况改。qr.toml 不进版本控制。
-#
-# 相对路径锚定仓库根,绝对路径原样使用。
-# WSL 里访问 Windows 盘用 /mnt/ 前缀,例如 data = "/mnt/d/quant/l3data"。
-#
-# 也可以完全不建这个文件,改用环境变量,键名前面加 QR_ 并大写:
-#   export QR_DATA=/Volumes/ext/l3data
-# 环境变量优先级高于本文件。
+# Copy to qr.toml only when no local configuration exists.
+# 没有本机配置时复制为 qr.toml；已有配置请直接编辑，不要覆盖。
+# Priority / 优先级: QR_<KEY> environment → qr.toml → defaults.
+# Relative paths are repository-relative / 相对路径锚定仓库根。
 
 [paths]
-# ── l3_factor 主线 ────────────────────────────────────────────────────────────
-data = "l3_factor/data"    # 其下有 cache/ panels/ tmp/ agn/ tess/
-bt   = "l3_factor/bt"      # 评估与回测产物, 会自动创建
+# A-shares: raw data and main research / A 股原始数据与主线
+tl_zip = "data/ashare/TL"
+data   = "ashare/l3_factor/data"   # cache/, panels/, tmp/
+bt     = "ashare/l3_factor/bt"
+vsim   = "ashare/vorder_sim/build/vsim"
 
-# ── factor(早期项目, 已被 l3_factor 取代) ────────────────────────────────────
-lob_root    = "data/Lob_new"
-feat_root   = "data/factor/features"
-res_root    = "data/factor/results"
+# A-shares: reconstructed data / A 股重建数据（外部数据路径也可保持原值）
+flow_root      = "data/Flow_TL"
+auction_mx     = "data/Level2_MX"
+lob_h5         = "data/Lob_local"
+lob_level2     = "data/Level2"
+lob_3s         = "data/Lob_new_3s"
+tick3s_parquet = "data/Lob_new_3s_MX"
+tick3s_ref     = "data/tick_3s"
+tick3s_bin     = "data/tick_3s_staging"
+
+# A-shares: earlier factor research / A 股早期因子
+lob_root  = "data/Lob_new"
+feat_root = "data/factor/features"
+res_root  = "data/factor/results"
+
+# US equities: minute input and runs / 美股分钟输入与实验产物
+# Downloader / 下载器: --output-dir data/massive/unified
+us_minute   = "data/massive/unified/flatfiles/stocks/minute_aggs_v1"
+us_research = "data/us_equity"
+
+# Archived crypto experiments / 已归档的 crypto 实验
 crypto_data = "data/massive/Crypto_MIN"
 crypto_feat = "data/factor/crypto_features"
 crypto_ic   = "data/factor/crypto_ic"
-
-# ── 原始数据 ──────────────────────────────────────────────────────────────────
-tl_zip = "TL"    # 通联逐笔 zip, 其下按日期分子目录, 如 TL/20260707/
-
-# ── build_tick3s 对比脚本 ─────────────────────────────────────────────────────
-tick3s_ref = "data/tick_3s"           # 参考 parquet
-tick3s_bin = "data/tick_3s_staging"   # .bin 分片目录
-
-# ── 可执行文件 ────────────────────────────────────────────────────────────────
-# Windows 上写不写 .exe 都行, 解析时会自动补, 也会去 build/Release/ 下找。
-vsim = "vorder_sim/build/vsim"

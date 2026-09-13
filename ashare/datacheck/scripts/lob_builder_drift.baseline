@@ -1,0 +1,158 @@
+# auction_port_markers: 6
+--- datacheck/lob_builder.h
++++ vorder_sim/lob_builder.h
+@@ -11,4 +11,5 @@
+ #include <fstream>
+ #include <algorithm>
++#include <functional>
+ 
+ namespace dc {
+@@ -148,4 +149,18 @@
+     const std::vector<TradeRecord>& getTradeTable() const { return tradeTable_; }
+ 
++    // ── vorder_sim 扩展 ─────────────────────────────────────────────────────────
++    // 每条记录处理完(handle* 改簿后)触发的观察者回调, 供虚拟订单追踪器旁挂。
++    // 回调参数是「已 resequence 并排序后」的当前记录, 触发顺序 = 真实簿处理顺序。
++    // 真实簿本身完全不受影响(回调只读)。
++    using EventHook = std::function<void(const UnifiedRecord&, const LobBuilder&)>;
++    void setEventHook(EventHook hook) { onEvent_ = std::move(hook); }
++    // lite 模式: 只维护真实簿 + 触发回调, 跳过 orderTable_/tradeTable_ 的构造
++    // (getCurrentLob/calcPosition/派生记录/距离比例等只为输出记录服务的重活)。
++    // vorder_sim 不用这两张表, 开 lite 可显著减少建簿开销。
++    void setLiteMode(bool v) { lite_ = v; }
++    // 聚合盘口(价->量)只读访问, 供 uncross 与最优价查询。
++    const std::map<int64_t,int64_t>& bestBid() const { return bestBidList_; }  // key = -intPrice
++    const std::map<int64_t,int64_t>& bestAsk() const { return bestAskList_; }  // key =  intPrice
++
+ private:
+     void buildDerivedOrders();
+@@ -209,4 +224,7 @@
+     std::vector<LobRecord>   orderTable_;
+     std::vector<TradeRecord> tradeTable_;
++
++    EventHook onEvent_;   // vorder_sim: 每条记录处理后触发(可空)
++    bool lite_ = false;   // vorder_sim: 跳过 order/trade 记录构造
+ };
+ 
+--- datacheck/lob_builder.cpp
++++ vorder_sim/lob_builder.cpp
+@@ -357,15 +357,16 @@
+     rec.type        = type;
+     rec.timeDiff    = 0;
+-    getCurrentLob(rec);
+-
+-    if (rec.bdp[0] > 0) {
+-        rec.bidDistance = rec.bdp[0] - dprice;
+-        if (rec.bdv[0] > 0)
+-            rec.bidRatio = static_cast<double>(info.totalVolume) / rec.bdv[0];
+-    }
+-    if (rec.akp[0] > 0) {
+-        rec.askDistance = dprice - rec.akp[0];
+-        if (rec.akv[0] > 0)
+-            rec.askRatio = static_cast<double>(info.totalVolume) / rec.akv[0];
++    if (!lite_) {
++        getCurrentLob(rec);
++        if (rec.bdp[0] > 0) {
++            rec.bidDistance = rec.bdp[0] - dprice;
++            if (rec.bdv[0] > 0)
++                rec.bidRatio = static_cast<double>(info.totalVolume) / rec.bdv[0];
++        }
++        if (rec.akp[0] > 0) {
++            rec.askDistance = dprice - rec.akp[0];
++            if (rec.akv[0] > 0)
++                rec.askRatio = static_cast<double>(info.totalVolume) / rec.akv[0];
++        }
+     }
+ 
+@@ -496,5 +497,5 @@
+         // 基线消费、自行用下一行推 post-event): 在 handle* 改簿前先快照。
+         // time_diff 改生命周期语义(wt=距上委托, cl=撤单−原委托, zb=成交−被动单), 各分支内算。
+-        getCurrentLob(lr);
++        if (!lite_) getCurrentLob(lr);
+ 
+         if (rec.actionType == 0) {
+@@ -604,9 +605,10 @@
+ 
+             if (isSH_) {
++                // createDerivedOrder 必须调用(其中 handleOrder 把派生单入簿); 仅 lite 时跳过记录 push
+                 if (!allOrders_.count(rec.buyId)) {
+-                    LobRecord dr; if (createDerivedOrder(rec.buyId,  rec.time, dr)) orderTable_.push_back(dr);
++                    LobRecord dr; bool m = createDerivedOrder(rec.buyId,  rec.time, dr); if (m && !lite_) orderTable_.push_back(dr);
+                 }
+                 if (!allOrders_.count(rec.sellId)) {
+-                    LobRecord dr; if (createDerivedOrder(rec.sellId, rec.time, dr)) orderTable_.push_back(dr);
++                    LobRecord dr; bool m = createDerivedOrder(rec.sellId, rec.time, dr); if (m && !lite_) orderTable_.push_back(dr);
+                 }
+             }
+@@ -624,34 +626,41 @@
+             lr.type        = -1;
+ 
+-            TradeRecord tr;
+-            tr.sysid    = asid;
+-            tr.wtVolume = rec.volume;
+-            tr.wtSec    = rec.timeSeconds;
+-            tr.transSt  = rec.timeSeconds; tr.transSs = rec.timeSeconds;
+-            tr.act      = (ad == 'B') ? 1 : 0;
+-            tr.transEt  = rec.timeSeconds; tr.transEs = rec.timeSeconds;
+-            tr.transVlm = rec.volume;
+-            tr.transAmt = rec.price * rec.volume; tr.vwap = rec.price;
+-            tr.actVlm   = (ad == 'B') ? rec.volume : 0;
+-            tr.actAmt   = (ad == 'B') ? rec.price * rec.volume : 0;
+-            tr.actNum   = (ad == 'B') ? 1 : 0;
+-            tr.pasVlm   = (ad == 'B') ? 0 : rec.volume;
+-            tr.pasAmt   = (ad == 'B') ? 0 : rec.price * rec.volume;
+-            tr.pasNum   = (ad == 'B') ? 0 : 1;
+-            tradeTable_.push_back(tr);
+-        }
+-
+-        // 距离/比例用「插入前」的盘口(已在循环顶部 getCurrentLob 取好), 对 wt/cl/zb 全算
+-        if (lr.bdp[0] > 0) {
+-            lr.bidDistance = lr.bdp[0] - lr.price;
+-            if (lr.bdv[0] > 0 && lr.volume > 0)
+-                lr.bidRatio = static_cast<double>(lr.volume) / lr.bdv[0];
+-        }
+-        if (lr.akp[0] > 0) {
+-            lr.askDistance = lr.price - lr.akp[0];
+-            if (lr.akv[0] > 0 && lr.volume > 0)
+-                lr.askRatio = static_cast<double>(lr.volume) / lr.akv[0];
+-        }
+-        orderTable_.push_back(lr);
++            if (!lite_) {
++                TradeRecord tr;
++                tr.sysid    = asid;
++                tr.wtVolume = rec.volume;
++                tr.wtSec    = rec.timeSeconds;
++                tr.transSt  = rec.timeSeconds; tr.transSs = rec.timeSeconds;
++                tr.act      = (ad == 'B') ? 1 : 0;
++                tr.transEt  = rec.timeSeconds; tr.transEs = rec.timeSeconds;
++                tr.transVlm = rec.volume;
++                tr.transAmt = rec.price * rec.volume; tr.vwap = rec.price;
++                tr.actVlm   = (ad == 'B') ? rec.volume : 0;
++                tr.actAmt   = (ad == 'B') ? rec.price * rec.volume : 0;
++                tr.actNum   = (ad == 'B') ? 1 : 0;
++                tr.pasVlm   = (ad == 'B') ? 0 : rec.volume;
++                tr.pasAmt   = (ad == 'B') ? 0 : rec.price * rec.volume;
++                tr.pasNum   = (ad == 'B') ? 0 : 1;
++                tradeTable_.push_back(tr);
++            }
++        }
++
++        if (!lite_) {
++            // 距离/比例用「插入前」的盘口(已在循环顶部 getCurrentLob 取好), 对 wt/cl/zb 全算
++            if (lr.bdp[0] > 0) {
++                lr.bidDistance = lr.bdp[0] - lr.price;
++                if (lr.bdv[0] > 0 && lr.volume > 0)
++                    lr.bidRatio = static_cast<double>(lr.volume) / lr.bdv[0];
++            }
++            if (lr.akp[0] > 0) {
++                lr.askDistance = lr.price - lr.akp[0];
++                if (lr.akv[0] > 0 && lr.volume > 0)
++                    lr.askRatio = static_cast<double>(lr.volume) / lr.akv[0];
++            }
++            orderTable_.push_back(lr);
++        }
++
++        // vorder_sim: 每条记录处理完(改簿后)旁挂虚拟订单追踪器。只读, 不影响真实簿。
++        if (onEvent_) onEvent_(rec, *this);
+     }
+ 
